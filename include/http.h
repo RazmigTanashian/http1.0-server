@@ -4,19 +4,20 @@
 enum http_method {
 	HTTP_METHOD_GET,
 	HTTP_METHOD_POST,
-	HTTP_METHOD_HEAD
+	HTTP_METHOD_HEAD,
+
+	HTTP_METHOD_ERR_NOT_FOUND
 };
 
 struct http_request {
 	enum http_method method;
 	char path[64];
-	char head[64];
 };
 
-struct http_request http_parse_request(char client_msg[]);
+enum http_method http_retrieve_method(char *msg, int msg_len);
 
-void http_handle_request_get(void);
-void http_handle_request_post(void);
-void http_handle_request_head(void);
+void http_handle_request_get(int client_sfd, char *msg, int msg_len);
+void http_handle_request_post(int client_sfd, char *msg, int msg_len);
+void http_handle_request_head(int client_sfd, char *msg, int msg_len);
 
 #endif // HTTP_H

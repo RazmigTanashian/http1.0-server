@@ -6,12 +6,11 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include "http.h"
-
-#define ARRAY_LENGTH(arr) (sizeof(arr) / sizeof(arr[0]))
+#include "utils.h"
 
 #define PORT_NUMBER 8080
 
-void handle_client_connection(int client_sfd) {
+static void handle_client_connection(int client_sfd) {
 	char recv_buf[256] = { '\0' };
 	int r = recv(client_sfd, recv_buf, ARRAY_LENGTH(recv_buf), 0);
 	if (r < 0) {
@@ -19,20 +18,28 @@ void handle_client_connection(int client_sfd) {
 		exit(EXIT_FAILURE);
 	}
 
- 	struct http_request req = http_parse_request(recv_buf);
+	printf("\nRequest:\n");
+	printf("%s", recv_buf);
 
-	if (req.method == HTTP_METHOD_GET) {
-		http_handle_request_get();
-	} else if (req.method == HTTP_METHOD_POST) {
-		http_handle_request_post();
-	} else if (req.method == HTTP_METHOD_HEAD) {
-		http_handle_request_head();
+	enum http_method m = http_retrieve_method(recv_buf, ARRAY_LENGTH(recv_buf));
+	if (m == HTTP_METHOD_GET) {
+		http_handle_request_get(client_sfd, recv_buf, ARRAY_LENGTH(recv_buf));
+	} else if (m == HTTP_METHOD_POST) {
+		http_handle_request_post(client_sfd, recv_buf, ARRAY_LENGTH(recv_buf));
+	} else if (m == HTTP_METHOD_HEAD) {
+		http_handle_request_head(client_sfd, recv_buf, ARRAY_LENGTH(recv_buf));
 	} else {
 		printf("Http1.0 request method received from the client was unrecognized!\n");
 	}
+
+	printf("close()ing client sfd!\n");
+	if (close(client_sfd) < 0) {
+		perror("close");
+		exit(EXIT_FAILURE);
+	}
 }
 
-void setup_server_socket(int *sock_fd) {
+static void setup_server_socket(int *sock_fd) {
 	struct sockaddr_in my_addr;
 	int opt = 1;
 	if ( (*sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -67,9 +74,6 @@ void run_server(void) {
 	struct sockaddr_in client_addr;
 	socklen_t client_addr_len = sizeof(client_addr);
 
-	int r; // for recv()
-	char recv_buf[256] = { '\0' };
-
 	pid_t pid;
 
 	setup_server_socket(&server_sfd);
@@ -78,12 +82,13 @@ void run_server(void) {
 		exit(EXIT_FAILURE);
 	}
 
+	printf("Waiting for client connections...\n");
 	while(1) {
-		printf("Waiting for a client connection...\n");
 		if ((client_sfd = accept(server_sfd, (struct sockaddr *)&client_addr, &client_addr_len)) < 0) {
 			perror("accept");
 			continue;
 		}
+		printf("Client connection found. Handling request!\n");
 		
 		pid = fork();
 		if (pid < 0) {
@@ -92,6 +97,7 @@ void run_server(void) {
 		} else if (pid == 0) {
 			printf("Child process(PID=%d) spawned to handle client connection!\n", getpid());
 			handle_client_connection(client_sfd);
+			printf("\n");
 			exit(EXIT_SUCCESS);
 		}
 	}
