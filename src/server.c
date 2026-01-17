@@ -18,7 +18,7 @@ static void handle_client_connection(int client_sfd) {
 		exit(EXIT_FAILURE);
 	}
 
-	printf("\nRequest:\n");
+	printf("\nIncoming request:\n");
 	printf("%s", recv_buf);
 
 	enum http_method m = http_retrieve_method(recv_buf, ARRAY_LENGTH(recv_buf));
@@ -30,6 +30,7 @@ static void handle_client_connection(int client_sfd) {
 		http_handle_request_head(client_sfd, recv_buf, ARRAY_LENGTH(recv_buf));
 	} else {
 		printf("Http1.0 request method received from the client was unrecognized!\n");
+		http_handle_request_unrecognized(client_sfd);
 	}
 
 	printf("close()ing client sfd!\n");

@@ -11,13 +11,13 @@
 #include <time.h>
 #include <assert.h>
 
-static size_t get_datetime(char *buf, int buf_len) {
+static size_t get_datetime(char *s, int s_len) {
 	time_t t = time(NULL);
         struct tm tm;
         size_t ret;
 
         tm = *localtime(&t);
-        return strftime(buf, buf_len, "Date: %a, %d %b %Y %H:%M:%S GMT\r\n", &tm);
+        return strftime(s, s_len, "Date: %a, %d %b %Y %H:%M:%S GMT", &tm);
 }
 
 enum http_method http_retrieve_method(char *msg, int msg_len) {
@@ -94,19 +94,18 @@ void http_handle_request_get(int client_sfd, char *msg, int msg_len) {
 	int r_size = 256 + file_stat.st_size;
 	char *r = malloc(r_size);
 
-	char dt[64];
-	get_datetime(dt, ARRAY_LENGTH(dt));
+	char dt[DATETIME_SIZE];
+	get_datetime(dt, DATETIME_SIZE);
 
 	int header_len = snprintf(r, r_size,
 		"HTTP/1.0 200 OK\r\n"
-		"%s"
+		"%s\r\n"
 		"Server: Razmig's server\r\n"
 		"Content-type: text/html\r\n"
 		"Content-length: %zu\r\n"
 		"\r\n",
 		dt,
 		file_stat.st_size);
-	printf("%s", r);
 
 	int total_len = header_len;
 	int n;
@@ -121,7 +120,8 @@ void http_handle_request_get(int client_sfd, char *msg, int msg_len) {
 	}
 	fclose(fp);
 
-	//printf("%s\n", r);
+	printf("Outgoing response:\n");
+	printf("%s\n", r);
 
 	send(client_sfd, r, total_len, 0);
 
@@ -134,3 +134,16 @@ void http_handle_request_post(int client_sfd, char *msg, int msg_len) {}
 
 void http_handle_request_head(int client_sfd, char *msg, int msg_len) {}
 
+void http_handle_request_unrecognized(int client_sfd) {
+	char *r = NULL;
+	char dt[DATETIME_SIZE];
+	get_datetime(dt, DATETIME_SIZE);
+
+	snprintf(r, HEADER_SIZE,
+		"HTTP/1.0 501 Not Implemented\r\n"
+		"%s\r\n"
+		"Server: Razmig's server\r\n",
+		dt);
+
+	send(client_sfd, r, HEADER_SIZE, 0);
+}
