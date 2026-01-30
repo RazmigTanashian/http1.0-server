@@ -204,7 +204,7 @@ void http_handle_request_get(int client_sfd, char *msg, int msg_len) {
 	}
 
 	if (send_all(client_sfd, response, total_len, 0) == -1) {
-		fprintf(stderr, "send_all() failed!\n");
+		exit(EXIT_FAILURE);
 	}
 
 	free(pathname);
@@ -222,11 +222,19 @@ void http_handle_request_unrecognized(int client_sfd) {
 	char dt[DATETIME_SIZE];
 	get_datetime(dt, DATETIME_SIZE);
 
-	snprintf(r, HEADER_SIZE,
+	int total_len = snprintf(r, HEADER_SIZE,
 		"HTTP/1.0 501 Not Implemented\r\n"
 		"%s\r\n"
 		"Server: Razmig's server\r\n",
 		dt);
+	if (total_len < 0 || total_len >= HEADER_SIZE) {
+		perror("snprintf");
+		respond_with_internal_server_error(client_sfd);
+	}
 
-	send_all(client_sfd, r, HEADER_SIZE, 0);
+	if (send_all(client_sfd, r, HEADER_SIZE, 0) == -1) {
+		exit(EXIT_FAILURE);
+	}
+
+	exit(EXIT_SUCCESS);
 }

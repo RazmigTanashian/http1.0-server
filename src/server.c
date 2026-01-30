@@ -79,6 +79,7 @@ int send_all(int socket_fd, const void *buf, size_t buf_length, int flags) {
 		num_bytes_sent = send(socket_fd, ptr, buf_length, flags);
 
 		if (num_bytes_sent == -1) {
+			perror("send");
 			return -1;
 		}
 
