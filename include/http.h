@@ -1,10 +1,6 @@
 #ifndef HTTP_H
 #define HTTP_H
 
-#define HEADER_SIZE 256
-
-#define DATETIME_SIZE 64
-
 enum http_method {
 	HTTP_METHOD_GET,
 	HTTP_METHOD_POST,

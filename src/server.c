@@ -1,10 +1,11 @@
-#include "server.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <stddef.h>
+#include "server.h"
 #include "http.h"
 #include "utils.h"
 
@@ -68,6 +69,24 @@ static void setup_server_socket(int *sock_fd) {
                 perror("listen");
                 exit(EXIT_FAILURE);
         }
+}
+
+int send_all(int socket_fd, const void *buf, size_t buf_length, int flags) {
+	ssize_t num_bytes_sent = 0;
+	const void *ptr = buf;
+
+	while (buf_length > 0) {
+		num_bytes_sent = send(socket_fd, ptr, buf_length, flags);
+
+		if (num_bytes_sent == -1) {
+			return -1;
+		}
+
+		ptr += num_bytes_sent;
+		buf_length -= num_bytes_sent;
+	}
+
+	return 0;
 }
 
 void run_server(void) {
