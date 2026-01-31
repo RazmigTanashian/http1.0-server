@@ -222,12 +222,12 @@ void http_handle_request_unrecognized(int client_sfd) {
 	char dt[DATETIME_SIZE];
 	get_datetime(dt, DATETIME_SIZE);
 
-	int total_len = snprintf(r, sizeof(r),
+	int total_len = snprintf(r, HEADER_SIZE,
 		"HTTP/1.0 501 Not Implemented\r\n"
 		"%s\r\n"
 		"Server: Razmig's server\r\n",
 		dt);
-	if (total_len < 0 || total_len >= sizeof(r)) {
+	if (total_len < 0 || total_len >= HEADER_SIZE) {
 		perror("snprintf");
 		respond_with_internal_server_error(client_sfd);
 	}
