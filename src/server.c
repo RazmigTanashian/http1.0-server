@@ -30,7 +30,7 @@ static void handle_client_connection(int client_sfd) {
 	} else if (m == HTTP_METHOD_HEAD) {
 		http_handle_request_head(client_sfd, recv_buf, ARRAY_LENGTH(recv_buf));
 	} else {
-		printf("Http1.0 request method received from the client was unrecognized!\n");
+		fprintf(stderr, "Http1.0 request method received from the client was unrecognized!\n");
 		http_handle_request_unrecognized(client_sfd);
 	}
 

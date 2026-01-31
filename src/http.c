@@ -218,21 +218,21 @@ void http_handle_request_post(int client_sfd, char *msg, int msg_len) {}
 void http_handle_request_head(int client_sfd, char *msg, int msg_len) {}
 
 void http_handle_request_unrecognized(int client_sfd) {
-	char *r = NULL;
+	char r[HEADER_SIZE] = { "" };
 	char dt[DATETIME_SIZE];
 	get_datetime(dt, DATETIME_SIZE);
 
-	int total_len = snprintf(r, HEADER_SIZE,
+	int total_len = snprintf(r, sizeof(r),
 		"HTTP/1.0 501 Not Implemented\r\n"
 		"%s\r\n"
 		"Server: Razmig's server\r\n",
 		dt);
-	if (total_len < 0 || total_len >= HEADER_SIZE) {
+	if (total_len < 0 || total_len >= sizeof(r)) {
 		perror("snprintf");
 		respond_with_internal_server_error(client_sfd);
 	}
 
-	if (send_all(client_sfd, r, HEADER_SIZE, 0) == -1) {
+	if (send_all(client_sfd, r, total_len, 0) == -1) {
 		exit(EXIT_FAILURE);
 	}
 
