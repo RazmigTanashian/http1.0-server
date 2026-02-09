@@ -39,6 +39,8 @@ static void handle_client_connection(int client_sfd) {
 		perror("close");
 		exit(EXIT_FAILURE);
 	}
+
+	exit(EXIT_SUCCESS);
 }
 
 static void setup_server_socket(int *sock_fd) {

@@ -209,8 +209,6 @@ void http_handle_request_get(int client_sfd, char *msg, int msg_len) {
 
 	free(pathname);
 	free(response);
-
-	exit(EXIT_SUCCESS);
 }
 
 void http_handle_request_post(int client_sfd, char *msg, int msg_len) {}
@@ -235,6 +233,4 @@ void http_handle_request_unrecognized(int client_sfd) {
 	if (send_all(client_sfd, r, total_len, 0) == -1) {
 		exit(EXIT_FAILURE);
 	}
-
-	exit(EXIT_SUCCESS);
 }
