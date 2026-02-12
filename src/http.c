@@ -16,6 +16,8 @@
 
 #define DATETIME_SIZE 64
 
+#define POST_DIR "../POST-junk/"
+
 static size_t get_datetime(char *s, int s_len) {
 	time_t t = time(NULL);
         struct tm tm;
@@ -52,6 +54,18 @@ static char *parse_for_pathname(char *msg, int msg_len) {
 	pathname = strndup(token, strlen(token));
 	free(duplicate_msg);
 	return pathname;
+}
+
+static int get_content_length(char *msg, int msg_len) {
+	const char *needle = "Content-Length: ";
+	char *value = NULL;
+
+	if ( (value = strstr(msg, "Content-Length: ")) == NULL) {
+		perror("strstr");
+		return -1;
+	}
+
+	return atoi(value + strlen(needle));
 }
 
 static void respond_with_internal_server_error(int client_sfd) {
@@ -211,7 +225,53 @@ void http_handle_request_get(int client_sfd, char *msg, int msg_len) {
 	free(response);
 }
 
-void http_handle_request_post(int client_sfd, char *msg, int msg_len) {}
+void http_handle_request_post(int client_sfd, char *msg, int msg_len) {
+	char *pathname = NULL;
+	char location[128] = { '\0' };
+	int total_len;
+
+	int content_length;
+	char *body = NULL;
+
+	FILE *fp = NULL;
+	size_t written;
+
+	if ((pathname = parse_for_pathname(msg, msg_len)) == NULL) {
+                fprintf(stderr, "erm....!\n");
+        }
+
+	total_len = snprintf(location, 128, "%s%s", POST_DIR, pathname);
+	if (total_len < 0 || total_len >= 128) {
+		perror("snprintf");
+		respond_with_internal_server_error(client_sfd);
+	}
+
+	printf("location to post ===> %s\n", location);
+
+        if ((content_length = get_content_length(msg, msg_len)) == -1) {
+		respond_with_internal_server_error(client_sfd);
+	}
+
+	if ((body = strstr(msg, "\r\n\r\n")) == NULL) {
+		perror("strstr");
+		respond_with_internal_server_error(client_sfd);
+	}
+
+	// skip over the "\r\n\r\n"
+	body += 4;
+
+        if ((fp = fopen(location, "w")) == NULL) {
+                perror("fopen");
+                respond_with_internal_server_error(client_sfd);
+        }
+	written = fwrite(body, 1, content_length, fp);
+	if (written < content_length) {
+		perror("fwrite");
+		respond_with_internal_server_error(client_sfd);
+	}
+
+	fclose(fp);
+}
 
 void http_handle_request_head(int client_sfd, char *msg, int msg_len) {}
 
