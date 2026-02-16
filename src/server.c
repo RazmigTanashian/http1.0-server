@@ -34,7 +34,6 @@ static void handle_client_connection(int client_sfd) {
 		http_handle_request_unrecognized(client_sfd);
 	}
 
-	printf("close()ing client sfd!\n");
 	if (close(client_sfd) < 0) {
 		perror("close");
 		exit(EXIT_FAILURE);

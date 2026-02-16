@@ -236,6 +236,12 @@ void http_handle_request_post(int client_sfd, char *msg, int msg_len) {
 	FILE *fp = NULL;
 	size_t written;
 
+	char dt[DATETIME_SIZE] = { "" };
+
+	char *response = NULL;
+	int response_size = HEADER_SIZE;
+	char *response_status = "HTTP/1.0 200 OK";
+
 	if ((pathname = parse_for_pathname(msg, msg_len)) == NULL) {
                 fprintf(stderr, "erm....!\n");
         }
@@ -271,6 +277,36 @@ void http_handle_request_post(int client_sfd, char *msg, int msg_len) {
 	}
 
 	fclose(fp);
+
+	// construct response
+	response_size += strlen(body);
+	response = malloc(response_size);
+
+	if (get_datetime(dt, DATETIME_SIZE) < 0) {
+                fprintf(stderr, "get_datetime failed!\n");
+                respond_with_internal_server_error(client_sfd);
+        }
+	total_len = snprintf(response, response_size,
+			"%s\r\n"
+                        "%s\r\n"
+                        "Server: Razmig's server\r\n"
+                        "Content-Length: %ld\r\n"
+			"\r\n"
+			"%s",
+                        response_status,
+                        dt,
+			strlen(body),
+			body);
+	if (total_len < 0 || total_len >= response_size) {
+		perror("snprintf");
+		respond_with_internal_server_error(client_sfd);
+	}
+
+	if (send_all(client_sfd, response, total_len, 0) == -1) {
+                exit(EXIT_FAILURE);
+        }
+
+	free(response);
 }
 
 void http_handle_request_head(int client_sfd, char *msg, int msg_len) {}
